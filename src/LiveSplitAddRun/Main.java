@@ -25,7 +25,10 @@ public class Main {
         boolean pbNext = false;
         boolean bstNext = false;
         boolean inSegmentHistory = false;
-        boolean runIsPB = times[times.length - 1] < getCurrentPB(contents);
+        boolean firstRun = false;
+        long oldPB = getCurrentPB(contents);
+        if (oldPB == -1) oldPB = times[times.length-1] + 1;
+        boolean runIsPB = times[times.length - 1] < oldPB;
         int id = -1;
         int split = 1;
 
@@ -43,6 +46,12 @@ public class Main {
                 attemptLooker = true;
                 continue;
             }
+
+            if (line.equals("  <AttemptHistory />")) {
+                contents.set(i, "  </AttemptHistory>");
+                attemptLooker = true;
+                firstRun = true;
+            }
             // Add attempt info
             if (attemptLooker) {
                 LocalDateTime now = LocalDateTime.now();
@@ -51,6 +60,7 @@ public class Main {
                         + "\" isStartSynced=\"True\" ended=\"" + formatTime(now) + "\" isEndedSynced=\"True\">");
                 contents.add(i+1, "      <RealTime>" + formatSeconds(times[times.length-1]) + "</RealTime>");
                 contents.add(i+2, "    </Attempt>");
+                if (firstRun) contents.add(i, "  <AttemptHistory>");
                 attemptAdded = true;
                 attemptLooker = false;
                 continue;
@@ -63,10 +73,11 @@ public class Main {
                     continue;
                 }
                 if (pbNext) {
-                    if (line.startsWith("</", 6)) {
+                    int n;
+                    if (line.startsWith("</", n = 8) || line.startsWith("</", n = 6)) {
                         contents.set(i-1, "        <SplitTime name=\"Personal Best\">");
                         contents.add(i, "          <RealTime>" + formatSeconds(times[split]) + "</RealTime>");
-                        contents.add(i+1, "        </SplitTime>");
+                        if (n == 6) contents.add(i+1, "        </SplitTime>");
                     }
                     else {
                         contents.set(i, "          <RealTime>" + formatSeconds(times[split]) + "</RealTime>");
@@ -82,6 +93,10 @@ public class Main {
                 continue;
             }
             if (bstNext) {
+                if (line.startsWith("</", 6)) {
+                    contents.remove(i);
+                    line = contents.get(i);
+                }
                 if (line.startsWith("<S", 6)) {
                     contents.set(i-1, "      <BestSegmentTime>");
                     contents.add(i, "        <RealTime>" + formatSeconds(times[split] - times[split-1]) + "</RealTime>");
@@ -141,7 +156,10 @@ public class Main {
     }
 
     private static boolean attemptStarter(String line) {
-        return line.startsWith("<Attempt", 4) || line.startsWith("</Attempt", 4) || line.startsWith("<RealTime", 6) || line.startsWith("<PauseTime", 6);
+        return  line.startsWith("<Attempt", 4) ||
+                line.startsWith("</Attempt", 4) ||
+                line.startsWith("<RealTime", 6) ||
+                line.startsWith("<PauseTime", 6);
     }
 
     private static String formatTime(LocalDateTime time) {
@@ -164,6 +182,7 @@ public class Main {
     }
 
     private static long hmsToSeconds(String hms) {
+
         int indices = 0;
         boolean daysLong = hms.charAt(1) == '.';
         if (daysLong) indices += 2;
@@ -179,7 +198,7 @@ public class Main {
         for (int i = lines.size() - 1; i > 0; i--) {
             String line = lines.get(i);
             if (line.startsWith("<SplitTime name=\"Per", 8)) {
-                return hmsToSeconds(lines.get(i + 1).substring(20, 36));
+                return (lines.get(i+1).startsWith("</SplitTime", 8)) ? -1 : hmsToSeconds(lines.get(i + 1).substring(20, 36));
             }
         }
         throw new IllegalStateException("WTF???");
