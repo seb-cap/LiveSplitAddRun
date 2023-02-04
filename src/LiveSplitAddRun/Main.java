@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 
 public class Main {
 
-    public static void convert(String fileName, long[] times) throws IOException {
+    public static String convert(String fileName, long[] times) throws IOException {
         ArrayList<String> contents = new ArrayList<>(times.length * 5);
         Scanner s = new Scanner(new File(fileName));
         while (s.hasNext()) {
@@ -152,7 +152,7 @@ public class Main {
         }
         writer.close();
 
-        System.out.println("Created file at: " + name);
+        return "Created file at: " + name;
     }
 
     private static boolean attemptStarter(String line) {
@@ -204,8 +204,7 @@ public class Main {
         throw new IllegalStateException("WTF???");
     }
 
-    private static long[] getTimes(String path) throws FileNotFoundException {
-        File f = new File(path);
+    public static long[] getTimes(File f) throws FileNotFoundException {
         Queue<Long> times = new LinkedList<>();
         Scanner s = new Scanner(f);
 
@@ -221,18 +220,11 @@ public class Main {
         }
         return ret;
     }
+    public static long[] getTimes(String path) throws FileNotFoundException {
+        return getTimes(new File(path));
+    }
 
     public static void main(String[] args) {
-        try {
-            if (args.length == 2) {
-                long[] times = getTimes(args[0]);
-                convert(args[1], times);
-            }
-            else {
-                convert("src/LiveSplitAddRun/SPLITS.lss", getTimes("src/LiveSplitAddRun/TIMES.txt"));
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        new UI();
     }
 }
