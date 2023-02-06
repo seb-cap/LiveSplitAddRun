@@ -2,6 +2,8 @@
 
 This program allows you to add a run to your .lss file by inserting a list of times.
 
+![Screenshot of program](Screenshot_20230206_084010.png)
+
 ### How to use
 
 Create a .txt file containing each time as a new line with hours, minutes, and seconds as shown. For example:
